@@ -301,6 +301,47 @@ public class DashboardService : IDashboardService
             throw;
         }
     }
+
+    /// <summary>
+    /// Obtém evolução mensal detalhada com receitas e despesas separadas
+    /// Implementa Requirement 6: gráfico de linha com evolução do saldo ao longo dos últimos 12 meses
+    /// Task 3.8: Create MonthlyTrend DTO e endpoint
+    /// </summary>
+    /// <param name="monthsBack">Número de meses para retornar (padrão: 12)</param>
+    /// <param name="userId">ID do usuário (opcional)</param>
+    /// <param name="cancellationToken">Token de cancelamento</param>
+    /// <returns>Dicionário com Mês -> (Receitas, Despesas, Saldo)</returns>
+    public async Task<Dictionary<DateTime, (decimal Income, decimal Expenses, decimal Balance)>> GetMonthlyTrendDetailedAsync(
+        int monthsBack = 12,
+        int? userId = null,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Obtendo tendência mensal detalhada do saldo: {MonthsBack} meses, Usuário: {UserId}", 
+            monthsBack, userId?.ToString() ?? "Todos");
+
+        try
+        {
+            var monthlyTrendDetailed = await _transactionRepository.GetMonthlyTrendDetailedAsync(
+                monthsBack,
+                userId,
+                cancellationToken);
+
+            // Aplicar precisão de 2 casas decimais em todos os valores
+            return monthlyTrendDetailed.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (
+                    Math.Round(kvp.Value.Income, 2),
+                    Math.Round(kvp.Value.Expenses, 2),
+                    Math.Round(kvp.Value.Balance, 2)
+                )
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao obter tendência mensal detalhada do saldo");
+            throw;
+        }
+    }
 }
 
 /// <summary>
@@ -344,4 +385,13 @@ public interface IDashboardService
     /// Obtém evolução mensal do saldo
     /// </summary>
     Task<Dictionary<DateTime, decimal>> GetMonthlyBalanceTrendAsync(int monthsBack = 12, int? userId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Obtém evolução mensal detalhada com receitas e despesas separadas
+    /// Task 3.8: Create MonthlyTrend DTO e endpoint
+    /// </summary>
+    Task<Dictionary<DateTime, (decimal Income, decimal Expenses, decimal Balance)>> GetMonthlyTrendDetailedAsync(
+        int monthsBack = 12,
+        int? userId = null,
+        CancellationToken cancellationToken = default);
 }

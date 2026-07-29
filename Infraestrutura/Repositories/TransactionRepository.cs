@@ -275,6 +275,38 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
             x => x.Income - x.Expenses);
     }
 
+    /// <summary>
+    /// Get detailed monthly trend data with income and expenses separated
+    /// Task 3.8: Create MonthlyTrend DTO e endpoint
+    /// Returns Dictionary with Month as key and tuple of (Income, Expenses, Balance) as value
+    /// </summary>
+    public async Task<Dictionary<DateTime, (decimal Income, decimal Expenses, decimal Balance)>> GetMonthlyTrendDetailedAsync(
+        int monthsBack = 12,
+        int? userId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var startDate = DateTime.UtcNow.AddMonths(-monthsBack);
+        var query = _dbSet
+            .Where(t => t.Date >= startDate);
+
+        if (userId.HasValue)
+            query = query.Where(t => t.UserId == userId);
+
+        var monthlyData = await query
+            .GroupBy(t => new { t.Date.Year, t.Date.Month })
+            .Select(g => new {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                Income = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                Expenses = g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+            })
+            .ToListAsync(cancellationToken);
+
+        return monthlyData.ToDictionary(
+            x => new DateTime(x.Year, x.Month, 1),
+            x => (x.Income, x.Expenses, x.Income - x.Expenses));
+    }
+
     public async Task<bool> ValidateTransactionAsync(Transaction transaction, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(transaction);

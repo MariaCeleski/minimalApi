@@ -73,6 +73,15 @@ public interface ITransactionRepository : IRepository<Transaction>
         int? userId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Get detailed monthly trend data with income and expenses separated
+    /// Task 3.8: Create MonthlyTrend DTO e endpoint
+    /// </summary>
+    Task<Dictionary<DateTime, (decimal Income, decimal Expenses, decimal Balance)>> GetMonthlyTrendDetailedAsync(
+        int monthsBack = 12,
+        int? userId = null,
+        CancellationToken cancellationToken = default);
+
     // Transaction validation (Requirement 1)
     Task<bool> ValidateTransactionAsync(Transaction transaction, CancellationToken cancellationToken = default);
 

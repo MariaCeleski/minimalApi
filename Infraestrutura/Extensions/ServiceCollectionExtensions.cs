@@ -45,10 +45,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<minimal_api.Aplicacao.Services.IDashboardService, minimal_api.Aplicacao.Services.DashboardService>();
         
         // Register report service - Task 4.1: Implement ReportService with monthly aggregations
-        services.AddScoped<minimal_api.Dominio.Interfaces.IReportService, minimal_api.Aplicacao.Services.ReportService>();
+        // TODO: services.AddScoped<minimal_api.Dominio.Interfaces.IReportService, minimal_api.Aplicacao.Services.ReportService>();
         
         // Register export service - Task 4.8: ExportService with CSV export
-        services.AddScoped<minimal_api.Aplicacao.Services.IExportService, minimal_api.Aplicacao.Services.ExportService>();
+        // TODO: services.AddScoped<minimal_api.Dominio.Interfaces.IExportService, minimal_api.Aplicacao.Services.ExportService>();
         
         return services;
     }

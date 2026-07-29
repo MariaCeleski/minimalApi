@@ -226,7 +226,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Retornar CategoryReportDto
   - _Requirements: 10_
 
-- [ ] 4.7 Create React ReportPage component
+- [x] 4.7 Create React ReportPage component
   - Selector para tipo de relatório (mensal, categoria)
   - Mostrar dados em tabelas formatadas
   - _Requirements: 9, 10_

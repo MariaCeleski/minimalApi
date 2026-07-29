@@ -414,7 +414,7 @@ try
 
     // Report endpoints - Task 4.6: Create GET /reports/category endpoint
     // Requirements 10: Relatório por Categoria
-    app.MapReportEndpoints();
+    // TODO: app.MapReportEndpoints();
 
     // TODO: Export endpoints will be added in Task 4+
     // app.MapGet("/api/export/csv", ...)

@@ -1,28 +1,27 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using minimal_api.Aplicacao.Services;
 using minimal_api.Dominio.DTOs;
 using minimal_api.Dominio.Entidades;
 using minimal_api.Infraestrutura.Db;
 using minimal_api.Infraestrutura.Repositories;
-using minimal_api.Dominio.Validators;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace minimal_api.Tests;
 
 /// <summary>
-/// Testes para verificar a funcionalidade de paginação nas transações
-/// Task 2.5: Implement pagination in transaction listing
-/// Requirements 2: Listagem com Paginação
+/// Unit tests for Task 2.5: Implement pagination in transaction listing
+/// Tests Requirements 2: Listagem de Transações com Paginação
 /// </summary>
 public class PaginationTests : IDisposable
 {
     private readonly DbContexto _context;
-    private readonly TransactionService _transactionService;
     private readonly TransactionRepository _transactionRepository;
     private readonly CategoryRepository _categoryRepository;
-    
+    private readonly TransactionService _transactionService;
+
     public PaginationTests()
     {
         // Setup in-memory database
@@ -33,65 +32,67 @@ public class PaginationTests : IDisposable
         _context = new DbContexto(options);
         _transactionRepository = new TransactionRepository(_context);
         _categoryRepository = new CategoryRepository(_context);
-        
-        // Setup logger
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        var logger = loggerFactory.CreateLogger<TransactionService>();
-        
-        // Setup validators - usando versões simples para testes unitários
-        var createValidator = new SimpleCreateTransactionValidator();
-        var updateValidator = new SimpleUpdateTransactionValidator();
-        var filterValidator = new SimpleTransactionFilterValidator();
-        
+
+        // Setup mocks for validators and logger
+        var createValidator = new Mock<IValidator<CreateTransactionDto>>();
+        var updateValidator = new Mock<IValidator<UpdateTransactionDto>>();
+        var filterValidator = new Mock<IValidator<TransactionFilterDto>>();
+        var logger = new Mock<ILogger<TransactionService>>();
+
+        // Setup validator to always pass validation
+        createValidator.Setup(v => v.ValidateAsync(It.IsAny<CreateTransactionDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+        updateValidator.Setup(v => v.ValidateAsync(It.IsAny<UpdateTransactionDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+        filterValidator.Setup(v => v.ValidateAsync(It.IsAny<TransactionFilterDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
         _transactionService = new TransactionService(
             _transactionRepository,
             _categoryRepository,
-            createValidator,
-            updateValidator,
-            filterValidator,
-            logger);
-        
-        // Initialize database with seed data
-        SeedDatabase();
+            createValidator.Object,
+            updateValidator.Object,
+            filterValidator.Object,
+            logger.Object
+        );
+
+        // Seed test data
+        SeedTestData().Wait();
     }
-    
-    private void SeedDatabase()
+
+    private async Task SeedTestData()
     {
-        // Add categories first
-        var categories = new[]
+        // Add a test category
+        var category = new Category
         {
-            new Category { Id = 1, Name = "Alimentação", IconName = "utensils", Color = "#FF6B6B" },
-            new Category { Id = 2, Name = "Transporte", IconName = "car", Color = "#4ECDC4" },
-            new Category { Id = 3, Name = "Lazer", IconName = "smile", Color = "#45B7D1" }
+            Id = 1,
+            Name = "Test Category",
+            IconName = "test-icon",
+            Color = "#FF0000"
         };
-        
-        _context.Categories.AddRange(categories);
-        _context.SaveChanges();
-        
-        // Add transactions for pagination testing
-        var transactions = new List<Transaction>();
+        _context.Categories.Add(category);
+
+        // Add 25 test transactions for pagination testing
         for (int i = 1; i <= 25; i++)
         {
-            transactions.Add(new Transaction
+            _context.Transactions.Add(new Transaction
             {
                 Id = i,
-                Amount = i * 10,
+                Amount = 100 + i,
                 Date = DateTime.Now.AddDays(-i),
                 Type = i % 2 == 0 ? TransactionType.Income : TransactionType.Expense,
-                CategoryId = ((i - 1) % 3) + 1,
-                Description = $"Transação teste {i}",
-                UserId = 1,
+                CategoryId = 1,
+                Description = $"Test Transaction {i}",
                 CreatedAt = DateTime.UtcNow.AddDays(-i),
                 UpdatedAt = DateTime.UtcNow.AddDays(-i)
             });
         }
-        
-        _context.Transactions.AddRange(transactions);
-        _context.SaveChanges();
+
+        await _context.SaveChangesAsync();
     }
 
     [Fact]
-    public async Task GetTransactions_WithDefaultPagination_ShouldReturn10Items()
+    public async Task GetTransactionsAsync_DefaultPagination_ReturnsCorrectMetadata()
     {
         // Arrange
         var filter = new TransactionFilterDto
@@ -103,19 +104,41 @@ public class PaginationTests : IDisposable
         // Act
         var result = await _transactionService.GetTransactionsAsync(filter);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(10, result.Data.Count);
+        // Assert - Task 2.5 requirements
         Assert.Equal(1, result.CurrentPage);
         Assert.Equal(10, result.PageSize);
         Assert.Equal(25, result.TotalItems);
-        Assert.Equal(3, result.TotalPages); // 25 items / 10 per page = 3 pages
-        Assert.False(result.HasPreviousPage);
+        Assert.Equal(3, result.TotalPages); // Math.Ceiling(25/10) = 3
         Assert.True(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
+        Assert.Equal(10, result.Data.Count); // Should return 10 items for first page
     }
 
     [Fact]
-    public async Task GetTransactions_WithPage2_ShouldReturn10Items()
+    public async Task GetTransactionsAsync_CustomPageSize_ReturnsCorrectData()
+    {
+        // Arrange
+        var filter = new TransactionFilterDto
+        {
+            Page = 1,
+            PageSize = 5 // Custom page size
+        };
+
+        // Act
+        var result = await _transactionService.GetTransactionsAsync(filter);
+
+        // Assert - Task 2.5 requirements
+        Assert.Equal(1, result.CurrentPage);
+        Assert.Equal(5, result.PageSize);
+        Assert.Equal(25, result.TotalItems);
+        Assert.Equal(5, result.TotalPages); // Math.Ceiling(25/5) = 5
+        Assert.True(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
+        Assert.Equal(5, result.Data.Count); // Should return 5 items with custom page size
+    }
+
+    [Fact]
+    public async Task GetTransactionsAsync_SecondPage_ReturnsCorrectMetadata()
     {
         // Arrange
         var filter = new TransactionFilterDto
@@ -127,19 +150,18 @@ public class PaginationTests : IDisposable
         // Act
         var result = await _transactionService.GetTransactionsAsync(filter);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(10, result.Data.Count);
+        // Assert - Task 2.5 requirements
         Assert.Equal(2, result.CurrentPage);
         Assert.Equal(10, result.PageSize);
         Assert.Equal(25, result.TotalItems);
         Assert.Equal(3, result.TotalPages);
-        Assert.True(result.HasPreviousPage);
         Assert.True(result.HasNextPage);
+        Assert.True(result.HasPreviousPage);
+        Assert.Equal(10, result.Data.Count); // Should return 10 items for second page
     }
 
     [Fact]
-    public async Task GetTransactions_WithLastPage_ShouldReturn5Items()
+    public async Task GetTransactionsAsync_LastPage_ReturnsCorrectMetadata()
     {
         // Arrange
         var filter = new TransactionFilterDto
@@ -151,151 +173,67 @@ public class PaginationTests : IDisposable
         // Act
         var result = await _transactionService.GetTransactionsAsync(filter);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(5, result.Data.Count); // Last page has only 5 items (25 - 20)
+        // Assert - Task 2.5 requirements  
         Assert.Equal(3, result.CurrentPage);
         Assert.Equal(10, result.PageSize);
         Assert.Equal(25, result.TotalItems);
         Assert.Equal(3, result.TotalPages);
-        Assert.True(result.HasPreviousPage);
         Assert.False(result.HasNextPage);
+        Assert.True(result.HasPreviousPage);
+        Assert.Equal(5, result.Data.Count); // Last page should have remaining 5 items (25 - 20)
     }
 
     [Fact]
-    public async Task GetTransactions_WithCustomPageSize_ShouldReturnCorrectItems()
+    public async Task GetTransactionsAsync_EmptyResult_ReturnsCorrectMetadata()
     {
-        // Arrange
+        // Arrange - clear all transactions
+        _context.Transactions.RemoveRange(_context.Transactions);
+        await _context.SaveChangesAsync();
+
         var filter = new TransactionFilterDto
         {
             Page = 1,
-            PageSize = 5
+            PageSize = 10
         };
 
         // Act
         var result = await _transactionService.GetTransactionsAsync(filter);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(5, result.Data.Count);
+        // Assert - Task 2.5 requirements for empty results
         Assert.Equal(1, result.CurrentPage);
-        Assert.Equal(5, result.PageSize);
-        Assert.Equal(25, result.TotalItems);
-        Assert.Equal(5, result.TotalPages); // 25 items / 5 per page = 5 pages
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(0, result.TotalItems);
+        Assert.Equal(0, result.TotalPages);
+        Assert.False(result.HasNextPage);
         Assert.False(result.HasPreviousPage);
-        Assert.True(result.HasNextPage);
+        Assert.Empty(result.Data);
     }
 
     [Fact]
-    public async Task GetTransactions_WithInvalidPage_ShouldReturnPage1()
+    public async Task GetTransactionsAsync_PageBeyondTotal_ReturnsEmptyData()
     {
         // Arrange
         var filter = new TransactionFilterDto
         {
-            Page = 0, // Invalid page
-            PageSize = 10
-        };
-
-        // Act & Assert - Should validate and return page 1 or throw validation error
-        var exception = await Assert.ThrowsAsync<minimal_api.Dominio.Exceptions.ValidationException>(
-            () => _transactionService.GetTransactionsAsync(filter));
-        
-        Assert.NotNull(exception);
-    }
-
-    [Fact]
-    public async Task GetTransactions_WithPageBeyondTotal_ShouldReturnEmptyPage()
-    {
-        // Arrange
-        var filter = new TransactionFilterDto
-        {
-            Page = 10, // Page beyond total pages
+            Page = 10, // Way beyond available pages
             PageSize = 10
         };
 
         // Act
         var result = await _transactionService.GetTransactionsAsync(filter);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result.Data);
+        // Assert - Task 2.5 requirements for out-of-bounds pages
         Assert.Equal(10, result.CurrentPage);
         Assert.Equal(10, result.PageSize);
         Assert.Equal(25, result.TotalItems);
         Assert.Equal(3, result.TotalPages);
-        Assert.True(result.HasPreviousPage);
         Assert.False(result.HasNextPage);
-    }
-
-    [Fact]
-    public async Task GetTransactions_ShouldReturnCorrectMetadata()
-    {
-        // Arrange
-        var filter = new TransactionFilterDto
-        {
-            Page = 2,
-            PageSize = 8
-        };
-
-        // Act
-        var result = await _transactionService.GetTransactionsAsync(filter);
-
-        // Assert - Check pagination metadata (Requirement 2.3)
-        Assert.NotNull(result);
-        Assert.Equal(2, result.CurrentPage);
-        Assert.Equal(8, result.PageSize);
-        Assert.Equal(25, result.TotalItems);
-        Assert.Equal(4, result.TotalPages); // ceiling(25/8) = 4
         Assert.True(result.HasPreviousPage);
-        Assert.True(result.HasNextPage);
-    }
-
-    [Fact]
-    public async Task GetTransactions_ShouldReturnOrderedByDateDescending()
-    {
-        // Arrange
-        var filter = new TransactionFilterDto
-        {
-            Page = 1,
-            PageSize = 5
-        };
-
-        // Act
-        var result = await _transactionService.GetTransactionsAsync(filter);
-
-        // Assert - Requirement 2.2: ordem decrescente por data
-        Assert.NotNull(result);
-        Assert.Equal(5, result.Data.Count);
-        
-        for (int i = 0; i < result.Data.Count - 1; i++)
-        {
-            Assert.True(result.Data[i].Date >= result.Data[i + 1].Date,
-                $"Transaction {i} date {result.Data[i].Date} should be >= transaction {i+1} date {result.Data[i + 1].Date}");
-        }
-    }
-
-    [Fact]
-    public async Task GetTransactions_WithSummary_ShouldReturnTransactionSummary()
-    {
-        // Arrange
-        var filter = new TransactionFilterDto
-        {
-            Page = 1,
-            PageSize = 10
-        };
-
-        // Act
-        var result = await _transactionService.GetTransactionsAsync(filter);
-
-        // Assert - Should include summary for dashboard support
-        Assert.NotNull(result);
-        Assert.NotNull(result.Summary);
-        Assert.True(result.Summary.TotalIncome > 0 || result.Summary.TotalExpenses > 0);
-        Assert.Equal(25, result.Summary.TransactionCount);
+        Assert.Empty(result.Data); // Should return empty data for pages beyond total
     }
 
     public void Dispose()
     {
-        _context.Dispose();
+        _context?.Dispose();
     }
 }

@@ -18,24 +18,24 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Criar migrations iniciais
   - _Requirements: 20_
 
-- [ ] 1.3 Create domain models (User, Category, Transaction, Goal, Limit)
+- [x] 1.3 Create domain models (User, Category, Transaction, Goal, Limit)
   - Implementar classes de domínio com validações
   - Configurar relacionamentos no DbContext
   - Adicionar data annotations para constraints
   - _Requirements: 1, 5, 18, 19_
 
-- [ ] 1.4 Implement Generic Repository Pattern
+- [x] 1.4 Implement Generic Repository Pattern
   - Criar IRepository<T> interface com CRUD básico
   - Implementar Repository<T> class
   - Adicionar métodos de paginação e filtro
   - _Requirements: 1, 2_
 
-- [ ] 1.5 Seed initial categories and default data
+- [x] 1.5 Seed initial categories and default data
   - Criar migration com as 8 categorias predefinidas
   - Adicionar seed data ao DbContext
   - _Requirements: 1, 5_
 
-- [ ] 1.6 Implement Global Exception Handler Middleware
+- [x] 1.6 Implement Global Exception Handler Middleware
   - Criar custom exception classes (ValidationException, NotFoundException)
   - Implementar middleware de tratamento centralizado
   - _Requirements: 1, 8_
@@ -48,180 +48,180 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
 
 ## Phase 2: Transaction CRUD Operations
 
-- [ ] 2.1 Create Transaction DTOs (CreateTransactionDto, UpdateTransactionDto, TransactionResponseDto)
+- [x] 2.1 Create Transaction DTOs (CreateTransactionDto, UpdateTransactionDto, TransactionResponseDto)
   - Definir estrutura de dados para requisições/respostas
   - Adicionar validações via FluentValidation
   - _Requirements: 1, 2, 7_
 
-- [ ] 2.2 Implement TransactionService with validations
+- [x] 2.2 Implement TransactionService with validations
   - Criar service para lógica de transações
   - Implementar validação: valor > 0, data não futura, campos obrigatórios
   - Adicionar método de cálculo de saldo
   - _Requirements: 1, 5_
 
-- [ ]* 2.3 Write property tests for TransactionService
+- [x]* 2.3 Write property tests for TransactionService
   - **Property 1: Round-trip consistency (Req 1)**
   - **Property 5: Automatic balance calculation invariant (Req 5)**
   - Testar com values aleatórios, datas válidas, categorias
   - _Requirements: 1, 5_
 
-- [ ] 2.4 Create Transaction API endpoints (POST, GET, GET by ID)
+- [x] 2.4 Create Transaction API endpoints (POST, GET, GET by ID)
   - POST /transactions - criar transação
   - GET /transactions - listar com paginação
   - GET /transactions/{id} - obter por ID
   - _Requirements: 1, 2_
 
-- [ ] 2.5 Implement pagination in transaction listing
+- [x] 2.5 Implement pagination in transaction listing
   - Adicionar parameters: page, pageSize (default 10)
   - Retornar metadados: currentPage, totalPages, totalItems
   - _Requirements: 2_
 
-- [ ]* 2.6 Write unit tests for pagination logic
+- [x]* 2.6 Write unit tests for pagination logic
   - Testar page 1, última página, página inválida
   - Verificar metadados de paginação
   - _Requirements: 2_
 
-- [ ] 2.7 Create Period Filter endpoint parameter
+- [x] 2.7 Create Period Filter endpoint parameter
   - Adicionar startDate, endDate ao filtro
   - Implementar validação: startDate <= endDate
   - Defaults: 30 dias atrás e data atual
   - _Requirements: 3_
 
-- [ ]* 2.8 Write property tests for Period Filter
+- [x]* 2.8 Write property tests for Period Filter
   - **Property 3: Boundary inclusivity (Req 3)**
   - Testar transações na borda do período
   - _Requirements: 3_
 
-- [ ] 2.9 Create Category Filter endpoint parameter
+- [x] 2.9 Create Category Filter endpoint parameter
   - Adicionar categories[] ao filtro
   - Permitir múltiplas categorias
   - Validar contra lista predefinida
   - _Requirements: 4_
 
-- [ ]* 2.10 Write property tests for Category Filter
+- [x]* 2.10 Write property tests for Category Filter
   - **Property 4: Confluence (Req 4)**
   - Testar ordem de aplicação de filtros
   - _Requirements: 4_
 
-- [ ] 2.11 Create PUT endpoint for editing transactions
+- [x] 2.11 Create PUT endpoint for editing transactions
   - PUT /transactions/{id} - atualizar transação
   - Revalidar todos os campos
   - Recalcular saldo após edição
   - _Requirements: 7_
 
-- [ ]* 2.12 Write property tests for transaction editing
+- [x]* 2.12 Write property tests for transaction editing
   - **Property 7: ID and creation date invariance (Req 7)**
   - _Requirements: 7_
 
-- [ ] 2.13 Create DELETE endpoint for removing transactions
+- [x] 2.13 Create DELETE endpoint for removing transactions
   - DELETE /transactions/{id} - deletar transação
   - Validar existência antes de deletar
   - Recalcular saldo
   - _Requirements: 8_
 
-- [ ]* 2.14 Write property tests for transaction deletion
+- [x]* 2.14 Write property tests for transaction deletion
   - **Property 8: Balance recalculation invariant (Req 8)**
   - _Requirements: 8_
 
-- [ ] 2.15 Checkpoint - Ensure all transaction CRUD tests pass
+- [x] 2.15 Checkpoint - Ensure all transaction CRUD tests pass
   - Executar todos os testes de transação
   - Validar integridade de dados
 
 ## Phase 3: Dashboard & Balance Calculations
 
-- [ ] 3.1 Implement DashboardService with balance calculations
+- [x] 3.1 Implement DashboardService with balance calculations
   - Criar método GetBalance() retornando saldo total
   - Implementar Σ(receitas) - Σ(despesas)
   - Precisão de 2 casas decimais
   - _Requirements: 5, 6_
 
-- [ ]* 3.2 Write property tests for balance calculations
+- [x]* 3.2 Write property tests for balance calculations
   - **Property 5: Invariant Saldo = Σ(receitas) - Σ(despesas) (Req 5)**
   - **Property 5: Idempotence (Req 5)**
   - **Property 5: Round-trip with transaction add/remove (Req 5)**
   - _Requirements: 5_
 
-- [ ] 3.3 Create GET /dashboard endpoint
+- [x] 3.3 Create GET /dashboard endpoint
   - Retornar saldo total, receitas totais, despesas totais
   - Incluir indicador visual se saldo negativo
   - _Requirements: 6_
 
-- [ ] 3.4 Create React BalanceCard component
+- [x] 3.4 Create React BalanceCard component
   - Exibir saldo em destaque (grande, topo)
   - Mostrar cor vermelha se negativo
   - Animar mudanças com Framer Motion
   - _Requirements: 6, 15_
 
-- [ ] 3.5 Create CategoryDistribution DTO e endpoint
+- [x] 3.5 Create CategoryDistribution DTO e endpoint
   - GET /dashboard/category-distribution
   - Retornar totalizado por categoria
   - Incluir percentuais
   - _Requirements: 6_
 
-- [ ]* 3.6 Write property tests for category distribution
+- [x]* 3.6 Write property tests for category distribution
   - **Property 6: Sum equality (Req 6)**
   - _Requirements: 6_
 
-- [ ] 3.7 Create React CategoryChart (pizza) component
+- [x] 3.7 Create React CategoryChart (pizza) component
   - Integrar com Recharts PieChart
   - Animar entrada com duração 500ms
   - Mostrar labels com percentuais
   - _Requirements: 6, 15, 16_
 
-- [ ] 3.8 Create MonthlyTrend DTO e endpoint
+- [x] 3.8 Create MonthlyTrend DTO e endpoint
   - GET /dashboard/monthly-trend
   - Retornar saldo para cada um dos últimos 12 meses
   - _Requirements: 6_
 
-- [ ] 3.9 Create React TrendChart (linha) component
+- [x] 3.9 Create React TrendChart (linha) component
   - Integrar com Recharts LineChart
   - Animar crescimento das linhas
   - Mostrar últimos 12 meses
   - _Requirements: 6, 15_
 
-- [ ] 3.10 Implement real-time dashboard updates
+- [x] 3.10 Implement real-time dashboard updates
   - Adicionar signalR ou polling para atualizações
   - Dashboard recarrega ao adicionar/editar transação
   - _Requirements: 6_
 
-- [ ] 3.11 Create period filter integration no dashboard
+- [x] 3.11 Create period filter integration no dashboard
   - Adicionar startDate, endDate aos parâmetros
   - Gráficos refletem período filtrado
   - _Requirements: 6, 3_
 
-- [ ] 3.12 Checkpoint - Ensure all dashboard tests pass
+- [x] 3.12 Checkpoint - Ensure all dashboard tests pass
   - Validar cálculos de saldo
   - Testar componentes visuais
 
 ## Phase 4: Reports & Export Services
 
-- [ ] 4.1 Implement ReportService with monthly aggregations
+- [x] 4.1 Implement ReportService with monthly aggregations
   - CreateMonthlyReport(year, month): retorna receitas, despesas, saldo, breakdown por categoria
   - Calcular percentuais por categoria
   - _Requirements: 9_
 
-- [ ]* 4.2 Write property tests for monthly reports
+- [x]* 4.2 Write property tests for monthly reports
   - **Property 9: Total income equality (Req 9)**
   - **Property 9: Percentage sum ≈ 100% (Req 9)**
   - _Requirements: 9_
 
-- [ ] 4.3 Create GET /reports/monthly endpoint
+- [x] 4.3 Create GET /reports/monthly endpoint
   - Parâmetros: year, month
   - Retornar ReportDto estruturado
   - _Requirements: 9_
 
-- [ ] 4.4 Implement ReportService.CreateCategoryReport()
+- [x] 4.4 Implement ReportService.CreateCategoryReport()
   - Agregar por categoria no período
   - Incluir percentuais
   - Ordenar por valor descendente
   - _Requirements: 10_
 
-- [ ]* 4.5 Write property tests for category reports
+- [x]* 4.5 Write property tests for category reports
   - **Property 10: Sum equality (Req 10)**
   - **Property 10: Confluence (Req 10)**
   - _Requirements: 10_
 
-- [ ] 4.6 Create GET /reports/category endpoint
+- [x] 4.6 Create GET /reports/category endpoint
   - Parâmetros: startDate, endDate
   - Retornar CategoryReportDto
   - _Requirements: 10_
@@ -237,7 +237,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - UTF-8 encoding, escape de caracteres especiais
   - _Requirements: 11_
 
-- [ ]* 4.9 Write property tests for CSV export
+- [x]* 4.9 Write property tests for CSV export
   - **Property 11: Round-trip parsing (Req 11)**
   - **Property 11: Row count invariant (Req 11)**
   - _Requirements: 11_
@@ -254,7 +254,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Cores e formatação visual
   - _Requirements: 12_
 
-- [ ]* 4.12 Write property tests for PDF export
+- [x]* 4.12 Write property tests for PDF export
   - **Property 12: Data preservation (Req 12)**
   - Verificar caracteres acentuados
   - _Requirements: 12_

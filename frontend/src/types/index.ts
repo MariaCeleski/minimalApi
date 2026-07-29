@@ -185,6 +185,20 @@ export interface TransactionFilters {
   type?: TransactionType;
 }
 
+// Pagination Types
+export interface PaginatedResponse<T> {
+  data: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+}
+
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+}
+
 // Theme Types
 export type ThemeMode = 'light' | 'dark';
 

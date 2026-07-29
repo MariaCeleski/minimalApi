@@ -67,4 +67,15 @@ public class CategoryRepository : Repository<Category>, ICategoryRepository
 
         return true;
     }
+
+    /// <summary>
+    /// Get all categories without filtering
+    /// Used for report generation and mapping (Tasks 4.1, 4.3)
+    /// </summary>
+    public async Task<List<Category>> GetAllCategoriesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+    }
 }

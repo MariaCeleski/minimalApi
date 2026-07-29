@@ -19,4 +19,10 @@ public interface ICategoryRepository : IRepository<Category>
 
     // Validate category data
     Task<bool> ValidateCategoryAsync(Category category, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all categories without filtering
+    /// Used for report generation and mapping (Tasks 4.1, 4.3)
+    /// </summary>
+    Task<List<Category>> GetAllCategoriesAsync(CancellationToken cancellationToken = default);
 }

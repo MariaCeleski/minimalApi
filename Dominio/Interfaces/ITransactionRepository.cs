@@ -113,4 +113,13 @@ public interface ITransactionRepository : IRepository<Transaction>
         DateTime endDate,
         int? userId = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all transactions in a period without pagination
+    /// Used for report generation (Tasks 4.1, 4.3)
+    /// </summary>
+    Task<List<Transaction>> GetTransactionsForPeriodAsync(
+        DateTime startDate,
+        DateTime endDate,
+        CancellationToken cancellationToken = default);
 }

@@ -436,4 +436,22 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 
         return await query.CountAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Get all transactions in a period without pagination
+    /// Used for report generation (Tasks 4.1, 4.3)
+    /// Returns all transactions with included relationships for report composition
+    /// </summary>
+    public async Task<List<Transaction>> GetTransactionsForPeriodAsync(
+        DateTime startDate,
+        DateTime endDate,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(t => t.Category)
+            .Include(t => t.User)
+            .Where(t => t.Date >= startDate && t.Date <= endDate)
+            .OrderByDescending(t => t.Date)
+            .ToListAsync(cancellationToken);
+    }
 }

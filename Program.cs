@@ -410,11 +410,13 @@ try
 
     // Dashboard endpoints - Task 3.3: Create GET /dashboard endpoint
     // Requirements 6: Dashboard com Visualização de Saldo e Gráficos
-    // app.MapDashboardEndpoints(); // Temporarily disabled - missing DTOs
+    app.MapDashboardEndpoints();
 
-    // TODO: Report and Export endpoints will be added in Task 4+
-    // app.MapGet("/api/reports/monthly/{year}/{month}", ...)
-    // app.MapGet("/api/reports/category", ...)
+    // Report endpoints - Task 4.6: Create GET /reports/category endpoint
+    // Requirements 10: Relatório por Categoria
+    app.MapReportEndpoints();
+
+    // TODO: Export endpoints will be added in Task 4+
     // app.MapGet("/api/export/csv", ...)
     // app.MapGet("/api/export/pdf", ...)
 

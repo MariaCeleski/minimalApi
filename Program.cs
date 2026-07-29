@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Infraestrutura.Db;
+using minimal_api.Infraestrutura.Middleware;
+using minimal_api.Dominio.Interfaces;
+using minimal_api.Infraestrutura.Repositories;
+using minimal_api.Infraestrutura.Extensions;
 using Serilog;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -36,12 +40,14 @@ try
     });
 
     // Add CORS with configuration
+    var defaultAllowedOrigins = new[] { "http://localhost:3000", "http://localhost:5173" };
+    
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowReactApp", policy =>
         {
             var allowedOrigins = builder.Configuration.GetSection("CORS:AllowedOrigins").Get<string[]>() 
-                ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+                ?? defaultAllowedOrigins;
             
             policy.WithOrigins(allowedOrigins)
                   .AllowAnyHeader()
@@ -99,15 +105,20 @@ try
     // Add HTTP client for external services
     builder.Services.AddHttpClient();
 
-    // Add custom services (placeholders - will be implemented in future tasks)
-    // TODO: Task 2 - Add transaction services
-    // builder.Services.AddScoped<ITransactionService, TransactionService>();
-    // builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-    
-    // TODO: Task 3+ - Add dashboard and report services  
-    // builder.Services.AddScoped<IDashboardService, DashboardService>();
-    // builder.Services.AddScoped<IReportService, ReportService>();
-    // builder.Services.AddScoped<IExportService, ExportService>();
+    // Add repository services (Task 1.4)
+    builder.Services.AddRepositories();
+
+    // Add application services (Task 2.2)
+    builder.Services.AddApplicationServices();
+
+    // Add validators (Task 2.1)
+    builder.Services.AddValidators();
+    builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IGoalRepository, GoalRepository>();
+    // builder.Services.AddScoped<ITransactionLimitRepository, TransactionLimitRepository>();
 
     var app = builder.Build();
 
@@ -122,34 +133,8 @@ try
         });
     }
 
-    // Global exception handling
-    app.UseExceptionHandler(appBuilder =>
-    {
-        appBuilder.Run(async context =>
-        {
-            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-            var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-            
-            if (feature?.Error is not null)
-            {
-                logger.LogError(feature.Error, "Unhandled exception occurred");
-            }
-            
-            context.Response.StatusCode = 500;
-            context.Response.ContentType = "application/json";
-            
-            var error = new
-            {
-                message = app.Environment.IsDevelopment() 
-                    ? feature?.Error?.Message ?? "An error occurred while processing your request."
-                    : "An error occurred while processing your request.",
-                timestamp = DateTime.UtcNow,
-                traceId = System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier
-            };
-            
-            await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(error));
-        });
-    });
+    // Global exception handling middleware - must be first
+    app.UseGlobalExceptionHandler();
 
     app.UseHttpsRedirection();
     
@@ -187,15 +172,17 @@ try
     .Produces<object>(200);
 
     // API info endpoint
+    var defaultEndpoints = new[] {
+        "/health - Health check",
+        "/swagger - API documentation"
+    };
+    
     app.MapGet("/", () => Results.Ok(new { 
         message = builder.Configuration["ApiSettings:Title"] ?? "Personal Financial Management API", 
         version = builder.Configuration["ApiSettings:Version"] ?? "1.0.0",
         description = builder.Configuration["ApiSettings:Description"] ?? "API para gestão financeira pessoal",
         environment = app.Environment.EnvironmentName,
-        endpoints = new[] {
-            "/health - Health check",
-            "/swagger - API documentation"
-        }
+        endpoints = defaultEndpoints
     }))
     .WithTags("Info")
     .WithSummary("API information endpoint")
@@ -229,14 +216,203 @@ try
     .Produces<object>(200)
     .Produces<object>(503);
 
-    // TODO: Transaction endpoints will be added in Task 2
-    // app.MapPost("/api/transactions", ...)
-    // app.MapGet("/api/transactions", ...)
-    // app.MapPut("/api/transactions/{id}", ...)
-    // app.MapDelete("/api/transactions/{id}", ...)
+    // Exception testing endpoints (for development/testing only)
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapGet("/test/exceptions/validation", () =>
+        {
+            throw minimal_api.Dominio.Exceptions.ValidationException.ForInvalidValue(-100);
+        })
+        .WithTags("Test")
+        .WithSummary("Test validation exception")
+        .WithDescription("Throws a validation exception for testing the global exception handler")
+        .ExcludeFromDescription();
 
-    // TODO: Dashboard endpoints will be added in Task 3+
-    // app.MapGet("/api/dashboard", ...)
+        app.MapGet("/test/exceptions/notfound", () =>
+        {
+            throw minimal_api.Dominio.Exceptions.NotFoundException.ForTransaction(999);
+        })
+        .WithTags("Test")
+        .WithSummary("Test not found exception")
+        .WithDescription("Throws a not found exception for testing the global exception handler")
+        .ExcludeFromDescription();
+
+        app.MapGet("/test/exceptions/businessrule", () =>
+        {
+            throw minimal_api.Dominio.Exceptions.BusinessRuleException.ForDataIntegrityViolation("Saldo inconsistente detectado");
+        })
+        .WithTags("Test")
+        .WithSummary("Test business rule exception")
+        .WithDescription("Throws a business rule exception for testing the global exception handler")
+        .ExcludeFromDescription();
+
+        app.MapGet("/test/exceptions/unauthorized", () =>
+        {
+            throw minimal_api.Dominio.Exceptions.UnauthorizedException.ForInvalidCredentials();
+        })
+        .WithTags("Test")
+        .WithSummary("Test unauthorized exception")
+        .WithDescription("Throws an unauthorized exception for testing the global exception handler")
+        .ExcludeFromDescription();
+
+        app.MapGet("/test/exceptions/generic", () =>
+        {
+            throw new InvalidOperationException("This is a generic exception for testing");
+        })
+        .WithTags("Test")
+        .WithSummary("Test generic exception")
+        .WithDescription("Throws a generic exception for testing the global exception handler")
+        .ExcludeFromDescription();
+    }
+
+    // Test endpoint for repository functionality (Task 1.4)
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapGet("/api/test/categories", async (IServiceProvider serviceProvider) =>
+        {
+            try
+            {
+                var categoryRepository = serviceProvider.GetRequiredService<ICategoryRepository>();
+                var categories = await categoryRepository.GetActiveCategoriesAsync();
+                return Results.Ok(new { 
+                    message = "Generic Repository Pattern working correctly",
+                    categoriesCount = categories.Count(),
+                    categories = categories.Select(c => new { c.Id, c.Name, c.IconName, c.Color })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Repository test failed",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithTags("Test")
+        .WithSummary("Test repository pattern")
+        .WithDescription("Tests the generic repository pattern implementation")
+        .Produces<object>(200)
+        .Produces<object>(500);
+
+        app.MapGet("/api/test/repository/pagination", async (IServiceProvider serviceProvider) =>
+        {
+            try
+            {
+                var categoryRepository = serviceProvider.GetRequiredService<ICategoryRepository>();
+                var pagedResult = await categoryRepository.GetPagedAsync(
+                    filter: null,
+                    orderBy: null,
+                    page: 1,
+                    pageSize: 5);
+                return Results.Ok(new {
+                    message = "Pagination working correctly",
+                    currentPage = pagedResult.CurrentPage,
+                    pageSize = pagedResult.PageSize,
+                    totalItems = pagedResult.TotalItems,
+                    totalPages = pagedResult.TotalPages,
+                    hasNextPage = pagedResult.HasNextPage,
+                    hasPreviousPage = pagedResult.HasPreviousPage,
+                    data = pagedResult.Data.Select(c => new { c.Id, c.Name })
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Pagination test failed",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithTags("Test")
+        .WithSummary("Test repository pagination")
+        .WithDescription("Tests the repository pagination functionality")
+        .Produces<object>(200)
+        .Produces<object>(500);
+    }
+
+    // Transaction endpoints - Task 2.4: Create Transaction API endpoints (POST, GET, GET by ID)
+    // Requirements 1, 2: Cadastro e Validação de Transações, Listagem com Paginação
+    app.MapTransactionEndpoints();
+
+    // Test endpoint to seed some sample data for pagination testing (development only)
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapPost("/api/test/seed-transactions", async (IServiceProvider serviceProvider) =>
+        {
+            try
+            {
+                using var scope = serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<DbContexto>();
+                
+                // Check if transactions already exist
+                var existingCount = await context.Transactions.CountAsync();
+                if (existingCount > 0)
+                {
+                    return Results.Ok(new { 
+                        message = $"Database already contains {existingCount} transactions",
+                        note = "Skipping seed to avoid duplicates"
+                    });
+                }
+
+                // Get existing categories
+                var categories = await context.Categories.Take(3).ToListAsync();
+                if (!categories.Any())
+                {
+                    return Results.BadRequest(new { 
+                        error = "No categories found. Please run database migrations first." 
+                    });
+                }
+
+                // Create 25 sample transactions for pagination testing
+                var transactions = new List<minimal_api.Dominio.Entidades.Transaction>();
+                
+                for (int i = 1; i <= 25; i++)
+                {
+                    transactions.Add(new minimal_api.Dominio.Entidades.Transaction
+                    {
+                        Amount = 50 + (i * 10),
+                        Date = DateTime.Now.AddDays(-i),
+                        Type = i % 3 == 0 ? minimal_api.Dominio.Entidades.TransactionType.Income : minimal_api.Dominio.Entidades.TransactionType.Expense,
+                        CategoryId = categories[i % categories.Count].Id,
+                        Description = $"Sample Transaction {i} for pagination testing",
+                        CreatedAt = DateTime.UtcNow.AddDays(-i),
+                        UpdatedAt = DateTime.UtcNow.AddDays(-i),
+                        UserId = null
+                    });
+                }
+
+                context.Transactions.AddRange(transactions);
+                await context.SaveChangesAsync();
+
+                return Results.Ok(new { 
+                    message = $"Successfully seeded {transactions.Count} sample transactions",
+                    note = "You can now test pagination with GET /api/transactions"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to seed transactions",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithTags("Test")
+        .WithSummary("Seed sample transactions for pagination testing")
+        .WithDescription("Creates 25 sample transactions to test pagination functionality")
+        .Produces<object>(200)
+        .Produces<object>(400)
+        .Produces<object>(500);
+    }
+
+    // Dashboard endpoints - Task 3.3: Create GET /dashboard endpoint
+    // Requirements 6: Dashboard com Visualização de Saldo e Gráficos
+    // app.MapDashboardEndpoints(); // Temporarily disabled - missing DTOs
+
+    // TODO: Report and Export endpoints will be added in Task 4+
     // app.MapGet("/api/reports/monthly/{year}/{month}", ...)
     // app.MapGet("/api/reports/category", ...)
     // app.MapGet("/api/export/csv", ...)

@@ -6,13 +6,13 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
 
 ## Phase 1: Project Foundation & Database Setup
 
-- [ ] 1.1 Configure projeto ASP.NET Core com Minimal API
+- [x] 1.1 Configure projeto ASP.NET Core com Minimal API
   - Criar projeto com dotnet CLI
   - Adicionar dependências: Entity Framework Core, SQLite, CORS, Logging
   - Configurar Program.cs com services básicos
   - _Requirements: 20_
 
-- [ ] 1.2 Setup Entity Framework Core e SQLite
+- [x] 1.2 Setup Entity Framework Core e SQLite
   - Criar DbContexto com DbSet para todas as entidades
   - Configurar conexão SQLite no appsettings.json
   - Criar migrations iniciais

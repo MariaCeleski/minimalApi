@@ -1,0 +1,210 @@
+using Microsoft.AspNetCore.Mvc;
+using minimal_api.Aplicacao.Services;
+using minimal_api.Dominio.DTOs;
+using minimal_api.Dominio.Exceptions;
+
+namespace minimal_api.Infraestrutura.Extensions;
+
+/// <summary>
+/// Extensão para mapeamento de endpoints de dashboard
+/// Task 3.3: Create GET /dashboard endpoint
+/// Implementa Requirements 6: Dashboard com Visualização de Saldo e Gráficos
+/// </summary>
+public static class DashboardEndpoints
+{
+    /// <summary>
+    /// Mapeia todos os endpoints de dashboard
+    /// </summary>
+    public static void MapDashboardEndpoints(this WebApplication app)
+    {
+        var dashboardGroup = app.MapGroup("/api/dashboard")
+            .WithTags("Dashboard");
+
+        // GET /api/dashboard - Endpoint principal do dashboard
+        // Task 3.3: Retornar saldo total, receitas totais, despesas totais
+        // Requirements 6: Dashboard com Visualização de Saldo e Gráficos
+        dashboardGroup.MapGet("/", async (
+            IDashboardService dashboardService,
+            CancellationToken cancellationToken,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? userId = null) =>
+        {
+            try
+            {
+                // Criar filtro com defaults aplicados
+                var filter = new DashboardFilterDto
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    UserId = userId
+                };
+                filter.ApplyDefaults();
+
+                // Validar período
+                if (!filter.IsValid())
+                {
+                    return Results.BadRequest(new
+                    {
+                        error = "Invalid date range",
+                        detail = "Start date must be less than or equal to end date",
+                        timestamp = DateTime.UtcNow
+                    });
+                }
+
+                // Obter totais de receitas, despesas e saldo
+                // Requirement 6.1: exibir saldo total em destaque no topo
+                var (totalIncome, totalExpenses, balance) = await dashboardService.GetTotalsForPeriodAsync(
+                    filter.StartDate,
+                    filter.EndDate,
+                    filter.UserId,
+                    cancellationToken);
+
+                // Construir resposta do dashboard
+                var response = new DashboardResponseDto
+                {
+                    Balance = balance,
+                    TotalIncome = totalIncome,
+                    TotalExpenses = totalExpenses,
+                    StartDate = filter.StartDate,
+                    EndDate = filter.EndDate,
+                    LastUpdated = DateTime.UtcNow,
+                    TransactionCount = 0 // TODO: Implementar contagem de transações quando disponível
+                };
+
+                return Results.Ok(response);
+            }
+            catch (ValidationException ex)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "Validation failed",
+                    details = ex.Errors,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to load dashboard data",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithName("GetDashboard")
+        .WithSummary("Obter dados do dashboard")
+        .WithDescription("Retorna saldo total, receitas totais, despesas totais com indicador visual se saldo negativo. Inclui gráficos de distribuição por categoria e evolução mensal.")
+        .Produces<DashboardResponseDto>(200)
+        .Produces<object>(400)
+        .Produces<object>(500);
+
+        // GET /api/dashboard/summary - Resumo rápido do dashboard
+        // Endpoint otimizado para carregamento inicial mais rápido
+        dashboardGroup.MapGet("/summary", async (
+            IDashboardService dashboardService,
+            CancellationToken cancellationToken,
+            [FromQuery] int? userId = null) =>
+        {
+            try
+            {
+                var (totalIncome, totalExpenses, balance) = await dashboardService.GetTotalsAsync(
+                    userId,
+                    cancellationToken);
+
+                var response = new DashboardResponseDto
+                {
+                    Balance = balance,
+                    TotalIncome = totalIncome,
+                    TotalExpenses = totalExpenses,
+                    StartDate = DateTime.MinValue,
+                    EndDate = DateTime.UtcNow,
+                    TransactionCount = 0 // TODO: Implementar contagem total de transações
+                };
+
+                return Results.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to load dashboard summary",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithName("GetDashboardSummary")
+        .WithSummary("Resumo rápido do dashboard")
+        .WithDescription("Retorna informações essenciais do dashboard para carregamento rápido")
+        .Produces<DashboardResponseDto>(200)
+        .Produces<object>(500);
+
+        // GET /api/dashboard/balance - Endpoint específico para saldo
+        // Requirements 5: Cálculo Automático de Saldo
+        dashboardGroup.MapGet("/balance", async (
+            IDashboardService dashboardService,
+            CancellationToken cancellationToken,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? userId = null) =>
+        {
+            try
+            {
+                decimal balance;
+                
+                if (startDate.HasValue || endDate.HasValue)
+                {
+                    // Calcular saldo para período específico
+                    balance = await dashboardService.GetBalanceForPeriodAsync(
+                        startDate,
+                        endDate,
+                        userId,
+                        cancellationToken);
+                }
+                else
+                {
+                    // Calcular saldo total
+                    balance = await dashboardService.GetBalanceAsync(userId, cancellationToken);
+                }
+
+                var isNegative = balance < 0;
+
+                return Results.Ok(new
+                {
+                    balance = balance,
+                    isNegative = isNegative,
+                    period = new
+                    {
+                        startDate = startDate?.ToString("yyyy-MM-dd"),
+                        endDate = endDate?.ToString("yyyy-MM-dd")
+                    },
+                    userId = userId,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (ValidationException ex)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "Invalid parameters",
+                    details = ex.Errors,
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Failed to calculate balance",
+                    detail: ex.Message,
+                    statusCode: 500
+                );
+            }
+        })
+        .WithName("GetDashboardBalance")
+        .WithSummary("Calcular saldo do dashboard")
+        .WithDescription("Calcula o saldo total ou para período específico com indicador visual se negativo")
+        .Produces<object>(200)
+        .Produces<object>(400)
+        .Produces<object>(500);
+    }
+}

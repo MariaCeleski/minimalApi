@@ -194,7 +194,12 @@ namespace minimal_api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals");
+                    b.ToTable("Goals", t =>
+                        {
+                            t.HasCheckConstraint("CK_Goal_CurrentAmount_NonNegative", "CurrentAmount >= 0");
+
+                            t.HasCheckConstraint("CK_Goal_TargetAmount_Positive", "TargetAmount > 0");
+                        });
                 });
 
             modelBuilder.Entity("minimal_api.Dominio.Entidades.Transaction", b =>
@@ -244,7 +249,10 @@ namespace minimal_api.Migrations
 
                     b.HasIndex("UserId", "Date");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", t =>
+                        {
+                            t.HasCheckConstraint("CK_Transaction_Amount_Positive", "Amount > 0");
+                        });
                 });
 
             modelBuilder.Entity("minimal_api.Dominio.Entidades.TransactionLimit", b =>
@@ -305,7 +313,14 @@ namespace minimal_api.Migrations
                     b.HasIndex("CategoryId", "Period", "UserId")
                         .IsUnique();
 
-                    b.ToTable("TransactionLimits");
+                    b.ToTable("TransactionLimits", t =>
+                        {
+                            t.HasCheckConstraint("CK_TransactionLimit_CurrentSpent_NonNegative", "CurrentSpent >= 0");
+
+                            t.HasCheckConstraint("CK_TransactionLimit_LimitAmount_Positive", "LimitAmount > 0");
+
+                            t.HasCheckConstraint("CK_TransactionLimit_PeriodEnd_After_Start", "PeriodEnd > PeriodStart");
+                        });
                 });
 
             modelBuilder.Entity("minimal_api.Dominio.Entidades.User", b =>

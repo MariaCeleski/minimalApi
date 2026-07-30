@@ -10,11 +10,11 @@ public class DbContexto : DbContext
     }
 
     // DbSets for all entities
-    public DbSet<Transaction> Transactions { get; set; }
-    public DbSet<Category> Categories { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Goal> Goals { get; set; }
-    public DbSet<TransactionLimit> TransactionLimits { get; set; }
+    public DbSet<Transaction> Transactions { get; set; } = null!;
+    public DbSet<Category> Categories { get; set; } = null!;
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Goal> Goals { get; set; } = null!;
+    public DbSet<TransactionLimit> TransactionLimits { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,6 +73,9 @@ public class DbContexto : DbContext
             entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => new { e.UserId, e.Date });
+            
+            // Check constraints for business rules (SQLite compatible)
+            entity.ToTable(t => t.HasCheckConstraint("CK_Transaction_Amount_Positive", "Amount > 0"));
         });
     }
 
@@ -175,6 +178,10 @@ public class DbContexto : DbContext
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.TargetDate);
+            
+            // Check constraints for business rules
+            entity.ToTable(t => t.HasCheckConstraint("CK_Goal_TargetAmount_Positive", "TargetAmount > 0"));
+            entity.ToTable(t => t.HasCheckConstraint("CK_Goal_CurrentAmount_NonNegative", "CurrentAmount >= 0"));
         });
     }
 
@@ -222,6 +229,11 @@ public class DbContexto : DbContext
             entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => new { e.CategoryId, e.Period, e.UserId }).IsUnique();
+            
+            // Check constraints for business rules
+            entity.ToTable(t => t.HasCheckConstraint("CK_TransactionLimit_LimitAmount_Positive", "LimitAmount > 0"));
+            entity.ToTable(t => t.HasCheckConstraint("CK_TransactionLimit_CurrentSpent_NonNegative", "CurrentSpent >= 0"));
+            entity.ToTable(t => t.HasCheckConstraint("CK_TransactionLimit_PeriodEnd_After_Start", "PeriodEnd > PeriodStart"));
         });
     }
 

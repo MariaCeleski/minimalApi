@@ -6,6 +6,20 @@ import {
   TransactionFilters
 } from '../types'
 
+// Pagination Response Types
+export interface PaginatedResponse<T> {
+  data: T[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  pageSize: number
+}
+
+export interface PaginationParams {
+  page?: number
+  pageSize?: number
+}
+
 export class TransactionService {
   private readonly endpoint = '/api/transactions'
 
@@ -15,6 +29,20 @@ export class TransactionService {
       ...filters
     }
     return apiService.get<Transaction[]>(this.endpoint, params)
+  }
+
+  async getPaginated(
+    userId: string, 
+    pagination?: PaginationParams,
+    filters?: TransactionFilters
+  ): Promise<PaginatedResponse<Transaction>> {
+    const params = {
+      userId,
+      page: pagination?.page || 1,
+      pageSize: pagination?.pageSize || 10,
+      ...filters
+    }
+    return apiService.get<PaginatedResponse<Transaction>>(this.endpoint, params)
   }
 
   async getById(id: string): Promise<Transaction> {

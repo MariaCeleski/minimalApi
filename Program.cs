@@ -420,6 +420,10 @@ try
     // Requirements 11, 12: Exportação em CSV e PDF
     app.MapExportEndpoints();
 
+    // Limit endpoints - Task 5.8: Create CRUD endpoints para Limits
+    // Requirement 19: Notificações de Limite Excedido
+    app.MapLimitEndpoints();
+
     // Ensure database is created and updated with migrations
     try
     {

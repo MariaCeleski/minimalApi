@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IGoalRepository, GoalRepository>();
-        // services.AddScoped<ITransactionLimitRepository, TransactionLimitRepository>();  // TODO: Fix compilation issue
+        services.AddScoped<ITransactionLimitRepository, TransactionLimitRepository>();
         
         return services;
     }
@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
     /// Task 3.1: DashboardService registration
     /// Task 4.1: ReportService registration for monthly and category reports (optional)
     /// Task 4.8: ExportService registration for CSV export
+    /// Task 5.6: TransactionLimitService registration
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
@@ -44,6 +45,9 @@ public static class ServiceCollectionExtensions
         
         // Register dashboard service - Task 3.1: Implement DashboardService with balance calculations
         services.AddScoped<minimal_api.Aplicacao.Services.IDashboardService, minimal_api.Aplicacao.Services.DashboardService>();
+        
+        // Register transaction limit service - Task 5.6: Implement TransactionLimitService
+        services.AddScoped<minimal_api.Dominio.Interfaces.ITransactionLimitService, minimal_api.Aplicacao.Services.TransactionLimitService>();
         
         // Register export service - Task 4.8: ExportService with CSV export
         // TODO: Fix DI registration - ExportService not being resolved properly
@@ -58,6 +62,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers FluentValidation validators for DTOs
     /// Task 2.1: DTO validations
+    /// Task 5.5: TransactionLimit DTO validations
     /// </summary>
     public static IServiceCollection AddValidators(this IServiceCollection services)
     {
@@ -65,6 +70,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FluentValidation.IValidator<minimal_api.Dominio.DTOs.CreateTransactionDto>, minimal_api.Dominio.Validators.CreateTransactionDtoValidator>();
         services.AddScoped<FluentValidation.IValidator<minimal_api.Dominio.DTOs.UpdateTransactionDto>, minimal_api.Dominio.Validators.UpdateTransactionDtoValidator>();
         services.AddScoped<FluentValidation.IValidator<minimal_api.Dominio.DTOs.TransactionFilterDto>, minimal_api.Dominio.Validators.TransactionFilterDtoValidator>();
+        
+        // Register transaction limit validators - Task 5.5
+        services.AddScoped<FluentValidation.IValidator<minimal_api.Dominio.DTOs.CreateTransactionLimitDto>, minimal_api.Dominio.Validators.CreateTransactionLimitDtoValidator>();
+        services.AddScoped<FluentValidation.IValidator<minimal_api.Dominio.DTOs.UpdateTransactionLimitDto>, minimal_api.Dominio.Validators.UpdateTransactionLimitDtoValidator>();
         
         return services;
     }

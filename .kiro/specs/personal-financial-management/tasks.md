@@ -310,7 +310,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Testar 80% boundary
   - _Requirements: 19_
 
-- [~] 5.8 Create CRUD endpoints para Limits
+- [ ] 5.8 Create CRUD endpoints para Limits
   - POST /limits, GET /limits, PUT /limits/{id}, DELETE /limits/{id}
   - _Requirements: 19_
 

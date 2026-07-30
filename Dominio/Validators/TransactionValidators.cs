@@ -408,3 +408,197 @@ public class SimpleTransactionFilterValidator : AbstractValidator<TransactionFil
             .WithMessage("Tipo de transação inválido");
     }
 }
+
+
+/// <summary>
+/// Validador para CreateTransactionLimitDto
+/// Implementa validações para criação de limites
+/// Requirement 19: Notificações de Limite Excedido
+/// </summary>
+public class CreateTransactionLimitDtoValidator : AbstractValidator<CreateTransactionLimitDto>
+{
+    private readonly ICategoryRepository _categoryRepository;
+
+    public CreateTransactionLimitDtoValidator(ICategoryRepository categoryRepository)
+    {
+        _categoryRepository = categoryRepository;
+
+        // Validação de nome
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .WithMessage("Nome do limite é obrigatório")
+            .Length(3, 200)
+            .WithMessage("Nome deve ter entre 3 e 200 caracteres");
+
+        // Validação de valor do limite - Requirement 19.1
+        RuleFor(x => x.LimitAmount)
+            .GreaterThan(0)
+            .WithMessage("Valor do limite deve ser maior que zero")
+            .LessThanOrEqualTo(999999999.99m)
+            .WithMessage("Valor do limite não pode exceder R$ 999.999.999,99");
+
+        // Validação de período
+        RuleFor(x => x.Period)
+            .IsInEnum()
+            .WithMessage("Período do limite é inválido");
+
+        // Validação de categoria - Requirement 19.1
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0)
+            .WithMessage("ID da categoria deve ser válido")
+            .MustAsync(CategoryExists)
+            .WithMessage("A categoria selecionada não existe");
+
+        // Validação de usuário (quando informado)
+        RuleFor(x => x.UserId)
+            .GreaterThan(0)
+            .When(x => x.UserId.HasValue)
+            .WithMessage("ID do usuário deve ser válido quando informado");
+    }
+
+    private async Task<bool> CategoryExists(int categoryId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId, cancellationToken);
+            return category != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
+
+/// <summary>
+/// Validador para UpdateTransactionLimitDto
+/// Implementa validações para atualização de limites
+/// Requirement 19: Notificações de Limite Excedido
+/// </summary>
+public class UpdateTransactionLimitDtoValidator : AbstractValidator<UpdateTransactionLimitDto>
+{
+    private readonly ICategoryRepository _categoryRepository;
+
+    public UpdateTransactionLimitDtoValidator(ICategoryRepository categoryRepository)
+    {
+        _categoryRepository = categoryRepository;
+
+        // Validação de ID
+        RuleFor(x => x.Id)
+            .GreaterThan(0)
+            .WithMessage("ID do limite deve ser válido");
+
+        // Validação de nome
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .WithMessage("Nome do limite é obrigatório")
+            .Length(3, 200)
+            .WithMessage("Nome deve ter entre 3 e 200 caracteres");
+
+        // Validação de valor do limite
+        RuleFor(x => x.LimitAmount)
+            .GreaterThan(0)
+            .WithMessage("Valor do limite deve ser maior que zero")
+            .LessThanOrEqualTo(999999999.99m)
+            .WithMessage("Valor do limite não pode exceder R$ 999.999.999,99");
+
+        // Validação de período
+        RuleFor(x => x.Period)
+            .IsInEnum()
+            .WithMessage("Período do limite é inválido");
+
+        // Validação de categoria
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0)
+            .WithMessage("ID da categoria deve ser válido")
+            .MustAsync(CategoryExists)
+            .WithMessage("A categoria selecionada não existe");
+
+        // Validação de status
+        RuleFor(x => x.IsActive)
+            .NotNull()
+            .WithMessage("Status de ativação é obrigatório");
+    }
+
+    private async Task<bool> CategoryExists(int categoryId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId, cancellationToken);
+            return category != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
+
+/// <summary>
+/// Simples validador para CreateTransactionLimitDto sem dependências de banco
+/// Usado para testes unitários
+/// </summary>
+public class SimpleCreateTransactionLimitValidator : AbstractValidator<CreateTransactionLimitDto>
+{
+    public SimpleCreateTransactionLimitValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .WithMessage("Nome do limite é obrigatório")
+            .Length(3, 200)
+            .WithMessage("Nome deve ter entre 3 e 200 caracteres");
+
+        RuleFor(x => x.LimitAmount)
+            .GreaterThan(0)
+            .WithMessage("Valor do limite deve ser maior que zero");
+
+        RuleFor(x => x.Period)
+            .IsInEnum()
+            .WithMessage("Período do limite é inválido");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0)
+            .WithMessage("ID da categoria deve ser válido");
+
+        RuleFor(x => x.UserId)
+            .GreaterThan(0)
+            .When(x => x.UserId.HasValue)
+            .WithMessage("ID do usuário deve ser válido quando informado");
+    }
+}
+
+/// <summary>
+/// Simples validador para UpdateTransactionLimitDto sem dependências de banco
+/// Usado para testes unitários
+/// </summary>
+public class SimpleUpdateTransactionLimitValidator : AbstractValidator<UpdateTransactionLimitDto>
+{
+    public SimpleUpdateTransactionLimitValidator()
+    {
+        RuleFor(x => x.Id)
+            .GreaterThan(0)
+            .WithMessage("ID do limite deve ser válido");
+
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .WithMessage("Nome do limite é obrigatório")
+            .Length(3, 200)
+            .WithMessage("Nome deve ter entre 3 e 200 caracteres");
+
+        RuleFor(x => x.LimitAmount)
+            .GreaterThan(0)
+            .WithMessage("Valor do limite deve ser maior que zero");
+
+        RuleFor(x => x.Period)
+            .IsInEnum()
+            .WithMessage("Período do limite é inválido");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0)
+            .WithMessage("ID da categoria deve ser válido");
+
+        RuleFor(x => x.IsActive)
+            .NotNull()
+            .WithMessage("Status de ativação é obrigatório");
+    }
+}

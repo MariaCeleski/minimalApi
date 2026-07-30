@@ -231,7 +231,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Mostrar dados em tabelas formatadas
   - _Requirements: 9, 10_
 
-- [-] 4.8 Implement ExportService with CSV export
+- [x] 4.8 Implement ExportService with CSV export
   - Método ExportTransactionsToCSV(transactions): gera CSV
   - Headers: ID, Data, Tipo, Valor, Categoria, Descrição
   - UTF-8 encoding, escape de caracteres especiais
@@ -242,13 +242,13 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - **Property 11: Row count invariant (Req 11)**
   - _Requirements: 11_
 
-- [-] 4.10 Create GET /export/csv endpoint
+- [x] 4.10 Create GET /export/csv endpoint
   - Query params: startDate, endDate, categories
   - Retornar arquivo como download
   - Nome: transacoes_YYYY-MM-DD.csv
   - _Requirements: 11_
 
-- [-] 4.11 Implement ExportService with PDF export
+- [x] 4.11 Implement ExportService with PDF export
   - Método ExportReportToPDF(report): gera PDF
   - Incluir: título, período, resumo, tabela de transações
   - Cores e formatação visual
@@ -259,13 +259,13 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Verificar caracteres acentuados
   - _Requirements: 12_
 
-- [-] 4.13 Create GET /export/pdf endpoint
+- [x] 4.13 Create GET /export/pdf endpoint
   - Query params: startDate, endDate
   - Retornar arquivo PDF como download
   - Nome: relatorio_YYYY-MM-DD.pdf
   - _Requirements: 12_
 
-- [~] 4.14 Create React ExportOptions component
+- [x] 4.14 Create React ExportOptions component
   - Botões para CSV e PDF
   - Mostrar período selecionado
   - Feedback ao usuário após export
@@ -277,12 +277,12 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
 
 ## Phase 5: Advanced Features (Goals & Limits)
 
-- [~] 5.1 Create Goal DTOs e repository
+- [-] 5.1 Create Goal DTOs e repository
   - GoalDto, CreateGoalDto com: nome, valor_alvo, data_limite
   - Implementar repository específico
   - _Requirements: 18_
 
-- [~] 5.2 Implement GoalsService with CRUD
+- [-] 5.2 Implement GoalsService with CRUD
   - CreateGoal(), GetGoal(), UpdateGoal(), DeleteGoal()
   - Calcular progresso: (saldo_poupança / valor_alvo) * 100
   - _Requirements: 18_
@@ -291,16 +291,16 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - **Property 18: Progress formula invariant (Req 18)**
   - _Requirements: 18_
 
-- [~] 5.4 Create CRUD endpoints para Goals
+- [-] 5.4 Create CRUD endpoints para Goals
   - POST /goals, GET /goals, GET /goals/{id}
   - PUT /goals/{id}, DELETE /goals/{id}
   - _Requirements: 18_
 
-- [~] 5.5 Create TransactionLimit DTOs e repository
+- [-] 5.5 Create TransactionLimit DTOs e repository
   - LimitDto com: categoria, limite_valor
   - _Requirements: 19_
 
-- [~] 5.6 Implement TransactionLimitService
+- [-] 5.6 Implement TransactionLimitService
   - CreateLimit(), GetLimit(), UpdateLimit(), DeleteLimit()
   - Verificar se gasto excede 80% e 100% após cada transação
   - _Requirements: 19_
@@ -310,7 +310,7 @@ Este plano implementa a aplicação de gestão financeira pessoal seguindo a arq
   - Testar 80% boundary
   - _Requirements: 19_
 
-- [~] 5.8 Create CRUD endpoints para Limits
+- [ ] 5.8 Create CRUD endpoints para Limits
   - POST /limits, GET /limits, PUT /limits/{id}, DELETE /limits/{id}
   - _Requirements: 19_
 

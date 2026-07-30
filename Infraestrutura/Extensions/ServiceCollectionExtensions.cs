@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using minimal_api.Dominio.Interfaces;
 using minimal_api.Infraestrutura.Repositories;
+using minimal_api.Aplicacao.Services;
 
 namespace minimal_api.Infraestrutura.Extensions;
 
@@ -33,7 +34,7 @@ public static class ServiceCollectionExtensions
     /// Registers application services
     /// Task 2.2: TransactionService registration
     /// Task 3.1: DashboardService registration
-    /// Task 4.1: ReportService registration for monthly and category reports
+    /// Task 4.1: ReportService registration for monthly and category reports (optional)
     /// Task 4.8: ExportService registration for CSV export
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
@@ -44,11 +45,12 @@ public static class ServiceCollectionExtensions
         // Register dashboard service - Task 3.1: Implement DashboardService with balance calculations
         services.AddScoped<minimal_api.Aplicacao.Services.IDashboardService, minimal_api.Aplicacao.Services.DashboardService>();
         
-        // Register report service - Task 4.1: Implement ReportService with monthly aggregations
-        // TODO: services.AddScoped<minimal_api.Dominio.Interfaces.IReportService, minimal_api.Aplicacao.Services.ReportService>();
-        
         // Register export service - Task 4.8: ExportService with CSV export
-        // TODO: services.AddScoped<minimal_api.Dominio.Interfaces.IExportService, minimal_api.Aplicacao.Services.ExportService>();
+        // TODO: Fix DI registration - ExportService not being resolved properly
+        // services.AddScoped<IExportService>(_ => new Aplicacao.Services.ExportService());
+        
+        // TODO: Register report service when ReportService is implemented
+        // services.AddScoped<minimal_api.Dominio.Interfaces.IReportService, minimal_api.Aplicacao.Services.ReportService>();
         
         return services;
     }

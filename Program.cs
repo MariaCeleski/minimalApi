@@ -416,9 +416,9 @@ try
     // Requirements 10: Relatório por Categoria
     // TODO: app.MapReportEndpoints();
 
-    // TODO: Export endpoints will be added in Task 4+
-    // app.MapGet("/api/export/csv", ...)
-    // app.MapGet("/api/export/pdf", ...)
+    // Export endpoints - Task 4.10, 4.13: Create GET /export/csv and /export/pdf endpoints
+    // Requirements 11, 12: Exportação em CSV e PDF
+    app.MapExportEndpoints();
 
     // Ensure database is created and updated with migrations
     try
